@@ -4,8 +4,8 @@ import os
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from datasets import load_dataset
 from torch.nn import CrossEntropyLoss
-from streaming_llm.kv_cache import StartRecentKVCache
-from streaming_llm.utils import parse_args, load
+from slam.kv_cache import StartRecentKVCache
+from slam.utils import parse_args, load
 
 device = "cuda"
 
@@ -43,17 +43,17 @@ else:
 
 if args.enable_pos_shift:
     if "llama" in model.config.model_type:
-        from streaming_llm.pos_shift.modify_llama import enable_llama_pos_shift_attention
+        from slam.pos_shift.modify_llama import enable_llama_pos_shift_attention
 
         enable_llama_pos_shift_attention(model)
     elif "falcon" in model.config.model_type:
-        from streaming_llm.pos_shift.modify_falcon import (
+        from slam.pos_shift.modify_falcon import (
             enable_falcon_pos_shift_attention,
         )
 
         enable_falcon_pos_shift_attention(model)
     elif "gpt_neox" in model.config.model_type:
-        from streaming_llm.pos_shift.modify_gpt_neox import (
+        from slam.pos_shift.modify_gpt_neox import (
             enable_gpt_neox_pos_shift_attention,
         )
 
@@ -86,6 +86,7 @@ for text in data["text"][: args.num_samples]:
                 use_cache=True,
             )
             logits = outputs.logits.view(-1, model.config.vocab_size)
+            print(logits.shape)
             past_key_values = outputs.past_key_values
             label = encodings.input_ids[:, idx + 1 : idx + 2].to(logits.device).view(-1)
             neg_log_likelihood = loss_fn(logits, label)
@@ -104,7 +105,9 @@ for text in data["text"][: args.num_samples]:
 
 f.close()
 
+print(len(nlls))
 ppl = torch.exp(torch.stack(nlls).mean())
+
 print(ppl.item())
 with open(f"{args.output_dir}/ppl.txt", "w") as f:
     f.write(f"{ppl.item()}\n")

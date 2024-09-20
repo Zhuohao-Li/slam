@@ -11,8 +11,8 @@ import re
 import sys
 
 from tqdm import tqdm
-from streaming_llm.utils import load, download_url, load_jsonl
-from streaming_llm.enable_streaming_llm import enable_streaming_llm
+from slam.utils import load, download_url, load_jsonl
+from slam.enable_slam import enable_slam
 
 
 @torch.no_grad()
@@ -94,7 +94,7 @@ def main(args):
         prompts += sample["turns"]
 
     if args.enable_streaming:
-        kv_cache = enable_streaming_llm(
+        kv_cache = enable_slam(
             model, start_size=args.start_size, recent_size=args.recent_size
         )
     else:
